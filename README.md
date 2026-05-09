@@ -50,9 +50,10 @@ http://192.168.0.10:3000
 
 ```bash
 npm run dev
+npm test
 ```
 
-Esse comando usa `node --watch src/server.js` para reiniciar o servidor ao alterar arquivos do backend. O frontend fica em `public/` e nao precisa de build.
+`npm run dev` usa `node --watch src/server.js` para reiniciar o servidor ao alterar arquivos do backend. `npm test` roda os testes com `node:test`. O frontend fica em `public/` e nao precisa de build.
 
 ## Configuracao
 

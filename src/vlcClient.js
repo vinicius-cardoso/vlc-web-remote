@@ -130,48 +130,74 @@ function extractTracks(status) {
   };
 
   for (const [name, stream] of Object.entries(categories)) {
-    if (!isStreamCategory(name, stream)) {
+    if (!stream || typeof stream !== "object") {
       continue;
     }
 
-    const id = Number((name.match(/\d+/) || [])[0]);
-    if (!Number.isFinite(id)) {
+    const kind = getTrackKind(stream);
+    if (!kind) {
       continue;
     }
 
-    const typeText = normalizeText([
-      readInsensitive(stream, "Type"),
-      readInsensitive(stream, "Tipo"),
-      readInsensitive(stream, "Stream Type"),
-      ...Object.values(stream || {})
-    ].join(" "));
-
-    const track = {
-      id,
-      label: formatTrackLabel(name, stream)
-    };
-
-    if (typeText.includes("audio")) {
-      tracks.audio.push(track);
+    const id = getTrackId(name, stream);
+    if (!Number.isInteger(id)) {
+      continue;
     }
 
-    if (
-      typeText.includes("subtitle") ||
-      typeText.includes("subtitulo") ||
-      typeText.includes("legenda") ||
-      typeText.includes("spu")
-    ) {
-      tracks.subtitles.push(track);
+    const target = kind === "audio" ? tracks.audio : tracks.subtitles;
+    target.push(formatTrack(kind, id, target.length, name, stream));
+  }
+
+  for (const group of [tracks.audio, tracks.subtitles]) {
+    group.sort((a, b) => a.id - b.id);
+    for (let index = 0; index < group.length; index += 1) {
+      if (!group[index].title) {
+        group[index].title = fallbackTrackTitle(group[index].kind, index);
+      }
     }
   }
 
-  tracks.audio.sort((a, b) => a.id - b.id);
-  tracks.subtitles.sort((a, b) => a.id - b.id);
   return tracks;
 }
 
-function isStreamCategory(name, stream) {
-  return /^stream\s+\d+/i.test(name) && stream && typeof stream === "object";
+function getTrackKind(stream) {
+  const typeText = normalizeText([
+    readInsensitive(stream, "Type"),
+    readInsensitive(stream, "Tipo"),
+    readInsensitive(stream, "Stream Type"),
+    readInsensitive(stream, "Tipo de fluxo"),
+    readInsensitive(stream, "Tipo da faixa")
+  ].join(" "));
+
+  if (typeText.includes("audio")) {
+    return "audio";
+  }
+
+  if (
+    typeText.includes("subtitle") ||
+    typeText.includes("subtitulo") ||
+    typeText.includes("legenda") ||
+    typeText.includes("spu")
+  ) {
+    return "subtitle";
+  }
+
+  return "";
+}
+
+function getTrackId(name, stream) {
+  const categoryId = Number((String(name).match(/\d+/) || [])[0]);
+  if (Number.isInteger(categoryId)) {
+    return categoryId;
+  }
+
+  return parseFirstInteger(
+    readInsensitive(stream, "ID") ||
+    readInsensitive(stream, "Id") ||
+    readInsensitive(stream, "Track ID") ||
+    readInsensitive(stream, "ID da faixa") ||
+    readInsensitive(stream, "Id da faixa")
+  );
 }
 
 function readInsensitive(object, key) {
@@ -179,17 +205,73 @@ function readInsensitive(object, key) {
     return "";
   }
 
-  const foundKey = Object.keys(object).find((item) => item.toLowerCase() === key.toLowerCase());
+  const normalizedKey = normalizeText(key);
+  const foundKey = Object.keys(object).find((item) => normalizeText(item) === normalizedKey);
   return foundKey ? object[foundKey] : "";
 }
 
-function formatTrackLabel(name, stream) {
-  const language = readInsensitive(stream, "Language") || readInsensitive(stream, "Idioma");
-  const codec = readInsensitive(stream, "Codec");
-  const description = readInsensitive(stream, "Description") || readInsensitive(stream, "Descricao");
-  return [name.replace(/\s+/g, " "), language, description, codec]
-    .filter(Boolean)
-    .join(" - ");
+function formatTrack(kind, id, index, name, stream) {
+  const language = normalizeLanguage(readFirst(stream, ["Language", "Idioma"]));
+  const title = readFirst(stream, ["Title", "Titulo", "Título", "Name", "Nome"]);
+  const description = readFirst(stream, ["Description", "Descricao", "Descrição"]);
+  const codec = readFirst(stream, ["Codec"]);
+  const channels = readFirst(stream, ["Channels", "Canais"]);
+  const bitrate = readFirst(stream, ["Bitrate", "Taxa de bits"]);
+
+  return {
+    id,
+    kind,
+    title: uniqueValues([title, description, language]).join(" - ") || fallbackTrackTitle(kind, index),
+    detail: uniqueValues([codec, channels, bitrate, cleanTrackSource(name)]).join(" - ")
+  };
+}
+
+function readFirst(object, keys) {
+  for (const key of keys) {
+    const value = cleanValue(readInsensitive(object, key));
+    if (value) {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+function cleanValue(value) {
+  if (value === undefined || value === null) {
+    return "";
+  }
+
+  return String(value).replace(/\s+/g, " ").trim();
+}
+
+function normalizeLanguage(value) {
+  const cleaned = cleanValue(value);
+  return /^(und|unknown|desconhecido)$/i.test(cleaned) ? "" : cleaned;
+}
+
+function cleanTrackSource(name) {
+  const cleaned = cleanValue(name);
+  return /\d/.test(cleaned) ? cleaned : "";
+}
+
+function fallbackTrackTitle(kind, index) {
+  return `${kind === "audio" ? "Áudio" : "Legenda"} ${index + 1}`;
+}
+
+function uniqueValues(values) {
+  const seen = new Set();
+  const result = [];
+
+  for (const value of values.map(cleanValue).filter(Boolean)) {
+    const key = normalizeText(value);
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(value);
+    }
+  }
+
+  return result;
 }
 
 function getTitle(meta) {
@@ -213,9 +295,16 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+function parseFirstInteger(value) {
+  const match = String(value || "").match(/-?\d+/);
+  return match ? Number(match[0]) : NaN;
+}
+
 function normalizeText(value) {
-  return value
+  return String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 }
+
+export { normalizeStatus };

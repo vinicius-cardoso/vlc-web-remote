@@ -15,6 +15,7 @@ This is a small Node.js ES module app that serves a mobile-first VLC remote and 
 
 - `npm start`: run the server with `node src/server.js`.
 - `npm run dev`: run the server with Node watch mode for local development.
+- `npm test`: run the `node:test` suite.
 - `cp .env.example .env`: create local VLC/server configuration.
 - `VLC_PASSWORD=sua_senha npm start`: override config for one run.
 - `./scripts/start-vlc.sh`: start VLC with the HTTP interface enabled.
@@ -28,13 +29,11 @@ Use modern JavaScript ES modules. Match the existing style: two-space indentatio
 
 ## Testing Guidelines
 
-No automated test framework is configured yet. For behavior changes, manually verify:
+Tests use Node's built-in `node:test` runner. Add focused tests under `test/` with names like `vlcClient.test.js`, especially for VLC status normalization and command mapping. For behavior changes, also manually verify:
 
 - `npm run dev` starts without errors.
 - `GET /api/status` returns JSON when VLC HTTP is available.
 - UI controls in `public/` still update playback, volume, audio tracks, and subtitles.
-
-If adding tests, prefer Node's built-in `node:test` and place files under `test/` with names like `vlcClient.test.js`.
 
 ## Commit & Pull Request Guidelines
 

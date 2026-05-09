@@ -119,8 +119,8 @@ function setStatus(status) {
   elements.timeCurrent.textContent = formatTime(status.time);
   elements.timeTotal.textContent = formatTime(status.length);
 
-  renderTracks(elements.audioTracks, "audioTrack", status.tracks.audio, fallbackAudioTracks());
-  renderTracks(elements.subtitleTracks, "subtitleTrack", withSubtitleOff(status.tracks.subtitles), fallbackSubtitleTracks());
+  renderTracks(elements.audioTracks, "audioTrack", status.tracks.audio, "Nenhum áudio informado pelo VLC.");
+  renderTracks(elements.subtitleTracks, "subtitleTrack", withSubtitleOff(status.tracks.subtitles), "Nenhuma legenda informada pelo VLC.");
 
   if (!playing && !paused && status.state) {
     elements.subtitle.textContent = stateLabel(status.state);
@@ -140,9 +140,17 @@ function setBusy(isBusy) {
   });
 }
 
-function renderTracks(container, action, tracks, fallbackTracks) {
-  const items = tracks && tracks.length ? tracks : fallbackTracks;
+function renderTracks(container, action, tracks, emptyText) {
+  const items = tracks || [];
   container.replaceChildren();
+
+  if (!items.length) {
+    const empty = document.createElement("p");
+    empty.className = "track-empty";
+    empty.textContent = emptyText;
+    container.append(empty);
+    return;
+  }
 
   for (const item of items) {
     const track = normalizeTrack(item);
@@ -164,33 +172,12 @@ function renderTracks(container, action, tracks, fallbackTracks) {
 }
 
 function renderDefaultTracks() {
-  renderTracks(elements.audioTracks, "audioTrack", [], fallbackAudioTracks());
-  renderTracks(elements.subtitleTracks, "subtitleTrack", [], fallbackSubtitleTracks());
+  renderTracks(elements.audioTracks, "audioTrack", [], "Aguardando VLC.");
+  renderTracks(elements.subtitleTracks, "subtitleTrack", [], "Aguardando VLC.");
 }
 
 function withSubtitleOff(tracks) {
-  if (!tracks || !tracks.length) {
-    return [];
-  }
-
-  return [{ id: -1, title: "Sem legenda", wide: true }, ...tracks];
-}
-
-function fallbackAudioTracks() {
-  return [
-    { id: 1, title: "Áudio 1" },
-    { id: 2, title: "Áudio 2" },
-    { id: 3, title: "Áudio 3" }
-  ];
-}
-
-function fallbackSubtitleTracks() {
-  return [
-    { id: -1, title: "Sem legenda", wide: true },
-    { id: 1, title: "Legenda 1" },
-    { id: 2, title: "Legenda 2" },
-    { id: 3, title: "Legenda 3" }
-  ];
+  return [{ id: -1, title: "Sem legenda", wide: true }, ...(tracks || [])];
 }
 
 function normalizeTrack(track) {
