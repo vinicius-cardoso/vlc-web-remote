@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#101820">
+    <title>VLC Control</title>
+    <link rel="stylesheet" href="/styles/app.css">
+    <script src="/scripts/app.js" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Controle local</p>
+          <h1>VLC Control</h1>
+        </div>
+        <button class="icon-button" type="button" data-refresh aria-label="Atualizar">
+          <span class="icon" data-icon="refresh"></span>
+        </button>
+      </header>
+
+      <section class="status-panel" aria-live="polite">
+        <div class="connection-row">
+          <span class="status-dot" data-connection-dot></span>
+          <span data-connection-text>Conectando...</span>
+        </div>
+        <h2 data-title>VLC</h2>
+        <p data-subtitle>Aguardando status do player.</p>
+        <div class="progress">
+          <span data-time-current>00:00</span>
+          <div class="progress-track" aria-hidden="true">
+            <span class="progress-fill" data-progress-fill></span>
+          </div>
+          <span data-time-total>00:00</span>
+        </div>
+      </section>
+
+      <section class="primary-controls" aria-label="Controles de reproducao">
+        <button class="control-button play-button" type="button" data-action="toggle">
+          <span class="icon" data-icon="play-pause"></span>
+          <span data-play-label>Pausar / reproduzir</span>
+        </button>
+      </section>
+
+      <section class="control-group" aria-labelledby="volume-title">
+        <div class="group-heading">
+          <h2 id="volume-title">Volume</h2>
+          <strong data-volume-label>0%</strong>
+        </div>
+
+        <div class="volume-grid">
+          <button class="control-button secondary" type="button" data-action="volumeDown">
+            <span class="icon" data-icon="volume-down"></span>
+            <span>Menos</span>
+          </button>
+          <button class="control-button secondary" type="button" data-action="volumeUp">
+            <span class="icon" data-icon="volume-up"></span>
+            <span>Mais</span>
+          </button>
+        </div>
+
+        <label class="slider-label" for="volume-slider">Ajuste fino</label>
+        <input id="volume-slider" class="volume-slider" type="range" min="0" max="200" step="1" value="0" data-volume-slider>
+        <button class="text-button" type="button" data-action="mute">Silenciar</button>
+      </section>
+
+      <section class="control-group" aria-labelledby="audio-title">
+        <div class="group-heading">
+          <h2 id="audio-title">Áudio</h2>
+        </div>
+        <div class="track-grid" data-audio-tracks></div>
+      </section>
+
+      <section class="control-group" aria-labelledby="subtitle-title">
+        <div class="group-heading">
+          <h2 id="subtitle-title">Legenda</h2>
+        </div>
+        <div class="track-grid" data-subtitle-tracks></div>
+      </section>
+    </main>
+  </body>
+</html>

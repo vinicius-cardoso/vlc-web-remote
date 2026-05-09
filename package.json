@@ -1,0 +1,14 @@
+{
+  "name": "vlc-control",
+  "version": "1.0.0",
+  "description": "Interface web responsiva para controlar o VLC pela rede local.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
