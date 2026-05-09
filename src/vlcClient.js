@@ -77,6 +77,8 @@ export async function sendControl(action, value) {
     volumeUp: ["volume", { val: `+${config.volumeStep}` }],
     volumeDown: ["volume", { val: `-${config.volumeStep}` }],
     mute: ["volume", { val: "0" }],
+    seekBackward: ["seek", { val: "-10" }],
+    seekForward: ["seek", { val: "+10" }],
     subtitleOff: ["subtitle_track", { val: "-1" }]
   };
 

@@ -7,6 +7,7 @@ Interface web responsiva para controlar o VLC pela rede local. O app roda em Nod
 ## Recursos
 
 - Pausar e reproduzir o video atual.
+- Avancar e voltar 10 segundos.
 - Aumentar, diminuir, silenciar e ajustar volume ate 200%.
 - Selecionar faixas de audio e legendas.
 - Acessar pelo celular usando o endereco da rede local.

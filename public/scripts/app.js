@@ -25,6 +25,8 @@ const icons = {
   "play-pause": '<svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z"></path><path d="M4 5v14"></path></svg>',
   pause: '<svg viewBox="0 0 24 24"><path d="M8 5v14"></path><path d="M16 5v14"></path></svg>',
   play: '<svg viewBox="0 0 24 24"><path d="m6 3 14 9-14 9V3Z"></path></svg>',
+  "seek-back": '<svg viewBox="0 0 24 24"><path d="m11 17-5-5 5-5"></path><path d="M18 18a6 6 0 1 0 0-12"></path><path d="M6 12h12"></path></svg>',
+  "seek-forward": '<svg viewBox="0 0 24 24"><path d="m13 7 5 5-5 5"></path><path d="M6 6a6 6 0 1 0 0 12"></path><path d="M6 12h12"></path></svg>',
   "volume-down": '<svg viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5Z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>',
   "volume-up": '<svg viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5Z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>'
 };

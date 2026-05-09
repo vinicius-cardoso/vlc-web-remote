@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizeStatus } from "../src/vlcClient.js";
+import { normalizeStatus, sendControl } from "../src/vlcClient.js";
 
 test("extracts localized VLC audio and subtitle tracks with stream ids", () => {
   const status = normalizeStatus({
@@ -74,4 +74,41 @@ test("does not create fake tracks when VLC omits stream data", () => {
 
   assert.deepEqual(status.tracks.audio, []);
   assert.deepEqual(status.tracks.subtitles, []);
+});
+
+test("maps 10 second seek controls to VLC seek commands", async (t) => {
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+
+  globalThis.fetch = async (url) => {
+    requests.push(new URL(String(url)));
+    return {
+      ok: true,
+      status: 200,
+      async json() {
+        return {
+          state: "playing",
+          volume: 128,
+          information: {
+            category: {}
+          }
+        };
+      }
+    };
+  };
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  await sendControl("seekBackward");
+  await sendControl("seekForward");
+
+  assert.deepEqual(
+    requests.map((url) => [url.searchParams.get("command"), url.searchParams.get("val")]),
+    [
+      ["seek", "-10"],
+      ["seek", "+10"]
+    ]
+  );
 });
