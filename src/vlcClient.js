@@ -1,5 +1,10 @@
 const DEFAULT_VOLUME_BASE = 256;
 const DEFAULT_TIMEOUT_MS = 3500;
+const selectedTracks = {
+  mediaKey: "",
+  audioId: null,
+  subtitleId: null
+};
 
 function getConfig() {
   return {
@@ -65,7 +70,7 @@ async function requestStatus(command, params = {}) {
 }
 
 export async function getVlcStatus() {
-  return normalizeStatus(await requestStatus());
+  return applyRememberedSelection(normalizeStatus(await requestStatus()));
 }
 
 export async function sendControl(action, value) {
@@ -84,15 +89,23 @@ export async function sendControl(action, value) {
 
   if (action === "volumeSet") {
     const percent = clamp(Number(value), 0, 200);
-    return normalizeStatus(await requestStatus("volume", { val: Math.round((percent / 100) * DEFAULT_VOLUME_BASE) }));
+    return applyRememberedSelection(
+      normalizeStatus(await requestStatus("volume", { val: Math.round((percent / 100) * DEFAULT_VOLUME_BASE) }))
+    );
   }
 
   if (action === "audioTrack") {
-    return normalizeStatus(await requestStatus("audio_track", { val: parseTrackValue(value) }));
+    const trackId = parseTrackValue(value);
+    const status = normalizeStatus(await requestStatus("audio_track", { val: trackId }));
+    rememberTrackSelection(status, "audio", trackId);
+    return applyRememberedSelection(status);
   }
 
   if (action === "subtitleTrack") {
-    return normalizeStatus(await requestStatus("subtitle_track", { val: parseTrackValue(value) }));
+    const trackId = parseTrackValue(value);
+    const status = normalizeStatus(await requestStatus("subtitle_track", { val: trackId }));
+    rememberTrackSelection(status, "subtitle", trackId);
+    return applyRememberedSelection(status);
   }
 
   const command = commands[action];
@@ -100,7 +113,7 @@ export async function sendControl(action, value) {
     throw new Error(`Acao desconhecida: ${action}`);
   }
 
-  return normalizeStatus(await requestStatus(command[0], command[1]));
+  return applyRememberedSelection(normalizeStatus(await requestStatus(command[0], command[1])));
 }
 
 function normalizeStatus(status) {
@@ -171,6 +184,62 @@ function extractTracks(status) {
   }
 
   return tracks;
+}
+
+function rememberTrackSelection(status, kind, trackId) {
+  syncSelectionMedia(status);
+
+  if (kind === "audio") {
+    selectedTracks.audioId = trackId;
+  } else {
+    selectedTracks.subtitleId = trackId;
+  }
+}
+
+function applyRememberedSelection(status) {
+  syncSelectionMedia(status);
+
+  if (Number.isInteger(status.tracks.activeAudioId)) {
+    selectedTracks.audioId = status.tracks.activeAudioId;
+  }
+
+  if (Number.isInteger(status.tracks.activeSubtitleId)) {
+    selectedTracks.subtitleId = status.tracks.activeSubtitleId;
+  }
+
+  if (Number.isInteger(selectedTracks.audioId)) {
+    status.tracks.activeAudioId = selectedTracks.audioId;
+    markSelectedTrack(status.tracks.audio, selectedTracks.audioId);
+  }
+
+  if (Number.isInteger(selectedTracks.subtitleId)) {
+    status.tracks.activeSubtitleId = selectedTracks.subtitleId;
+    markSelectedTrack(status.tracks.subtitles, selectedTracks.subtitleId);
+  }
+
+  return status;
+}
+
+function syncSelectionMedia(status) {
+  const mediaKey = getMediaKey(status);
+  if (selectedTracks.mediaKey && mediaKey && selectedTracks.mediaKey !== mediaKey) {
+    selectedTracks.audioId = null;
+    selectedTracks.subtitleId = null;
+  }
+
+  if (mediaKey) {
+    selectedTracks.mediaKey = mediaKey;
+  }
+}
+
+function getMediaKey(status) {
+  return [status.title, status.filename, status.length].filter(Boolean).join("|");
+}
+
+function markSelectedTrack(tracks, trackId) {
+  for (const track of tracks) {
+    track.selected = track.id === trackId;
+  }
 }
 
 function getTrackKind(stream) {

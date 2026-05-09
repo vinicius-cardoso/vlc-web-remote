@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizeStatus, sendControl } from "../src/vlcClient.js";
+import { getVlcStatus, normalizeStatus, sendControl } from "../src/vlcClient.js";
 
 test("extracts localized VLC audio and subtitle tracks with stream ids", () => {
   const status = normalizeStatus({
@@ -105,6 +105,59 @@ test("does not create fake tracks when VLC omits stream data", () => {
   assert.deepEqual(status.tracks.subtitles, []);
   assert.equal(status.tracks.activeAudioId, null);
   assert.equal(status.tracks.activeSubtitleId, null);
+});
+
+test("remembers selected tracks when VLC status omits active track fields", async (t) => {
+  const originalFetch = globalThis.fetch;
+
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    async json() {
+      return {
+        state: "playing",
+        length: 120,
+        volume: 128,
+        information: {
+          category: {
+            meta: {
+              title: "Selection Test",
+              filename: "selection-test.mkv"
+            },
+            "Transmissão 1": {
+              Tipo: "Áudio",
+              Idioma: "Português"
+            },
+            "Transmissão 2": {
+              Tipo: "Áudio",
+              Idioma: "English"
+            },
+            "Transmissão 3": {
+              Tipo: "Legenda",
+              Idioma: "Português"
+            },
+            "Transmissão 4": {
+              Tipo: "Legenda",
+              Idioma: "English"
+            }
+          }
+        }
+      };
+    }
+  });
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  await sendControl("audioTrack", 2);
+  await sendControl("subtitleTrack", 3);
+  const status = await getVlcStatus();
+
+  assert.equal(status.tracks.activeAudioId, 2);
+  assert.equal(status.tracks.activeSubtitleId, 3);
+  assert.equal(status.tracks.audio.find((track) => track.id === 2).selected, true);
+  assert.equal(status.tracks.subtitles.find((track) => track.id === 3).selected, true);
 });
 
 test("maps 10 second seek controls to VLC seek commands", async (t) => {

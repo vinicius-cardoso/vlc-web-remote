@@ -203,7 +203,7 @@ function renderTracks(container, action, tracks, emptyText, selectedId = null) {
   for (const item of items) {
     const track = normalizeTrack(item);
     const button = document.createElement("button");
-    const selected = selectedId !== null && track.id === selectedId;
+    const selected = track.selected === true || (selectedId !== null && track.id === selectedId);
     button.className = `track-button${track.wide ? " wide" : ""}${selected ? " selected" : ""}`;
     button.type = "button";
     button.dataset.action = action;
