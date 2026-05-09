@@ -11,9 +11,9 @@ const elements = {
   connectionDot: document.querySelector("[data-connection-dot]"),
   connectionText: document.querySelector("[data-connection-text]"),
   playButton: document.querySelector(".play-button"),
+  playIcon: document.querySelector("[data-play-icon]"),
   title: document.querySelector("[data-title]"),
   subtitle: document.querySelector("[data-subtitle]"),
-  playLabel: document.querySelector("[data-play-label]"),
   volumeLabel: document.querySelector("[data-volume-label]"),
   volumeSlider: document.querySelector("[data-volume-slider]"),
   progressFill: document.querySelector("[data-progress-fill]"),
@@ -118,8 +118,8 @@ function setStatus(status) {
 
   elements.title.textContent = status.title || "VLC";
   elements.subtitle.textContent = status.artist || status.filename || stateLabel(status.state);
-  elements.playLabel.textContent = playing ? "⏸" : "▶";
   elements.playButton.setAttribute("aria-label", playing ? "Pausar" : "Reproduzir");
+  setIcon(elements.playIcon, playing ? "pause" : "play");
 
   elements.volumeLabel.textContent = `${status.volumePercent}%`;
   elements.volumeSlider.value = String(status.volumePercent);

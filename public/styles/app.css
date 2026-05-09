@@ -197,11 +197,6 @@ h1 {
   font-size: 1.35rem;
 }
 
-.play-symbol {
-  font-size: 3.4rem;
-  line-height: 1;
-}
-
 .seek-button {
   min-height: 7.25rem;
   padding: 0.75rem 0.55rem;
@@ -243,9 +238,9 @@ h1 {
   flex: 0 0 auto;
 }
 
-.play-button .icon {
-  width: 2rem;
-  height: 2rem;
+.play-button .play-icon {
+  width: 3.6rem;
+  height: 3.6rem;
 }
 
 .icon svg {
