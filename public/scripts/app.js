@@ -1,5 +1,8 @@
 const state = {
   connected: false,
+  mediaKey: "",
+  selectedAudioTrackId: null,
+  selectedSubtitleTrackId: null,
   volumeTimer: null,
   lastStatus: null
 };
@@ -7,6 +10,7 @@ const state = {
 const elements = {
   connectionDot: document.querySelector("[data-connection-dot]"),
   connectionText: document.querySelector("[data-connection-text]"),
+  playButton: document.querySelector(".play-button"),
   title: document.querySelector("[data-title]"),
   subtitle: document.querySelector("[data-subtitle]"),
   playLabel: document.querySelector("[data-play-label]"),
@@ -80,6 +84,7 @@ async function runAction(action, value) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, value })
     });
+    rememberSelectedTrack(action, value);
     setStatus(payload.status);
     setConnection(true);
     if (navigator.vibrate) {
@@ -105,13 +110,16 @@ async function fetchJson(url, options) {
 
 function setStatus(status) {
   state.lastStatus = status;
+  syncMedia(status);
+  syncSelectedTracks(status.tracks);
+
   const playing = status.state === "playing";
   const paused = status.state === "paused";
 
   elements.title.textContent = status.title || "VLC";
   elements.subtitle.textContent = status.artist || status.filename || stateLabel(status.state);
-  elements.playLabel.textContent = playing ? "Pausar" : "Reproduzir";
-  setIcon(document.querySelector(".play-button .icon"), playing ? "pause" : "play");
+  elements.playLabel.textContent = playing ? "⏸" : "▶";
+  elements.playButton.setAttribute("aria-label", playing ? "Pausar" : "Reproduzir");
 
   elements.volumeLabel.textContent = `${status.volumePercent}%`;
   elements.volumeSlider.value = String(status.volumePercent);
@@ -121,11 +129,49 @@ function setStatus(status) {
   elements.timeCurrent.textContent = formatTime(status.time);
   elements.timeTotal.textContent = formatTime(status.length);
 
-  renderTracks(elements.audioTracks, "audioTrack", status.tracks.audio, "Nenhum áudio informado pelo VLC.");
-  renderTracks(elements.subtitleTracks, "subtitleTrack", withSubtitleOff(status.tracks.subtitles), "Nenhuma legenda informada pelo VLC.");
+  renderTracks(elements.audioTracks, "audioTrack", status.tracks.audio, "Nenhum áudio informado pelo VLC.", state.selectedAudioTrackId);
+  renderTracks(elements.subtitleTracks, "subtitleTrack", withSubtitleOff(status.tracks.subtitles), "Nenhuma legenda informada pelo VLC.", state.selectedSubtitleTrackId);
 
   if (!playing && !paused && status.state) {
     elements.subtitle.textContent = stateLabel(status.state);
+  }
+}
+
+function syncMedia(status) {
+  const mediaKey = [status.title, status.filename, status.length].filter(Boolean).join("|");
+  if (state.mediaKey && mediaKey && state.mediaKey !== mediaKey) {
+    state.selectedAudioTrackId = null;
+    state.selectedSubtitleTrackId = null;
+  }
+
+  state.mediaKey = mediaKey;
+}
+
+function syncSelectedTracks(tracks) {
+  const activeAudioId = normalizeTrackId(tracks?.activeAudioId);
+  const activeSubtitleId = normalizeTrackId(tracks?.activeSubtitleId);
+
+  if (activeAudioId !== null) {
+    state.selectedAudioTrackId = activeAudioId;
+  }
+
+  if (activeSubtitleId !== null) {
+    state.selectedSubtitleTrackId = activeSubtitleId;
+  }
+}
+
+function rememberSelectedTrack(action, value) {
+  const trackId = normalizeTrackId(value);
+  if (trackId === null) {
+    return;
+  }
+
+  if (action === "audioTrack") {
+    state.selectedAudioTrackId = trackId;
+  }
+
+  if (action === "subtitleTrack") {
+    state.selectedSubtitleTrackId = trackId;
   }
 }
 
@@ -142,7 +188,7 @@ function setBusy(isBusy) {
   });
 }
 
-function renderTracks(container, action, tracks, emptyText) {
+function renderTracks(container, action, tracks, emptyText, selectedId = null) {
   const items = tracks || [];
   container.replaceChildren();
 
@@ -157,10 +203,12 @@ function renderTracks(container, action, tracks, emptyText) {
   for (const item of items) {
     const track = normalizeTrack(item);
     const button = document.createElement("button");
-    button.className = `track-button${track.wide ? " wide" : ""}`;
+    const selected = selectedId !== null && track.id === selectedId;
+    button.className = `track-button${track.wide ? " wide" : ""}${selected ? " selected" : ""}`;
     button.type = "button";
     button.dataset.action = action;
     button.dataset.value = track.id;
+    button.setAttribute("aria-pressed", selected ? "true" : "false");
     button.textContent = track.title;
 
     if (track.detail) {
@@ -171,6 +219,11 @@ function renderTracks(container, action, tracks, emptyText) {
 
     container.append(button);
   }
+}
+
+function normalizeTrackId(value) {
+  const trackId = Number(value);
+  return Number.isInteger(trackId) ? trackId : null;
 }
 
 function renderDefaultTracks() {
@@ -184,7 +237,10 @@ function withSubtitleOff(tracks) {
 
 function normalizeTrack(track) {
   if (track.title) {
-    return track;
+    return {
+      ...track,
+      id: normalizeTrackId(track.id) ?? track.id
+    };
   }
 
   const parts = String(track.label || `Faixa ${track.id}`).split(" - ");

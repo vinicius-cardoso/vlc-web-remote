@@ -197,6 +197,11 @@ h1 {
   font-size: 1.35rem;
 }
 
+.play-symbol {
+  font-size: 3.4rem;
+  line-height: 1;
+}
+
 .seek-button {
   min-height: 7.25rem;
   padding: 0.75rem 0.55rem;
@@ -210,6 +215,15 @@ h1 {
 
 .secondary {
   min-height: 5.2rem;
+}
+
+.volume-symbol-button {
+  padding: 0.6rem;
+}
+
+.volume-symbol {
+  font-size: 3rem;
+  line-height: 1;
 }
 
 .icon-button {
@@ -302,12 +316,37 @@ h1 {
 }
 
 .track-button {
+  position: relative;
   min-height: 4.2rem;
   padding: 0.8rem;
+  border: 1px solid transparent;
   background: var(--surface-strong);
   font-weight: 800;
   line-height: 1.2;
   overflow-wrap: anywhere;
+}
+
+.track-button.selected {
+  border-color: color-mix(in srgb, var(--accent) 82%, white);
+  background: color-mix(in srgb, var(--accent) 78%, white);
+  color: #052019;
+  box-shadow: inset 0 0 0 2px rgba(5, 32, 25, 0.14);
+}
+
+.track-button.selected::after {
+  content: "✓";
+  position: absolute;
+  top: 0.4rem;
+  right: 0.45rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #052019;
+  color: var(--accent);
+  font-size: 0.72rem;
+  line-height: 1;
 }
 
 .track-button.wide {
@@ -320,6 +359,10 @@ h1 {
   font-size: 0.78rem;
   font-weight: 700;
   margin-top: 0.25rem;
+}
+
+.track-button.selected span {
+  color: rgba(5, 32, 25, 0.74);
 }
 
 .track-empty {

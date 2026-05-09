@@ -41,9 +41,8 @@
           <span class="icon" data-icon="seek-back"></span>
           <span>Voltar 10s</span>
         </button>
-        <button class="control-button play-button" type="button" data-action="toggle">
-          <span class="icon" data-icon="play-pause"></span>
-          <span data-play-label>Pausar / reproduzir</span>
+        <button class="control-button play-button" type="button" data-action="toggle" aria-label="Pausar / reproduzir">
+          <span class="play-symbol" data-play-label aria-hidden="true">▶</span>
         </button>
         <button class="control-button seek-button" type="button" data-action="seekForward" aria-label="Avançar 10 segundos">
           <span>Avançar 10s</span>
@@ -58,13 +57,11 @@
         </div>
 
         <div class="volume-grid">
-          <button class="control-button secondary" type="button" data-action="volumeDown">
-            <span class="icon" data-icon="volume-down"></span>
-            <span>Menos</span>
+          <button class="control-button secondary volume-symbol-button" type="button" data-action="volumeDown" aria-label="Diminuir volume">
+            <span class="volume-symbol" aria-hidden="true">−</span>
           </button>
-          <button class="control-button secondary" type="button" data-action="volumeUp">
-            <span class="icon" data-icon="volume-up"></span>
-            <span>Mais</span>
+          <button class="control-button secondary volume-symbol-button" type="button" data-action="volumeUp" aria-label="Aumentar volume">
+            <span class="volume-symbol" aria-hidden="true">+</span>
           </button>
         </div>
 

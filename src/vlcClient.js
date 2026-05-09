@@ -128,7 +128,9 @@ function extractTracks(status) {
   const categories = status.information?.category || {};
   const tracks = {
     audio: [],
-    subtitles: []
+    subtitles: [],
+    activeAudioId: null,
+    activeSubtitleId: null
   };
 
   for (const [name, stream] of Object.entries(categories)) {
@@ -147,7 +149,16 @@ function extractTracks(status) {
     }
 
     const target = kind === "audio" ? tracks.audio : tracks.subtitles;
-    target.push(formatTrack(kind, id, target.length, name, stream));
+    const track = formatTrack(kind, id, target.length, name, stream);
+    target.push(track);
+
+    if (isTrackSelected(stream)) {
+      if (kind === "audio") {
+        tracks.activeAudioId = id;
+      } else {
+        tracks.activeSubtitleId = id;
+      }
+    }
   }
 
   for (const group of [tracks.audio, tracks.subtitles]) {
@@ -216,16 +227,41 @@ function formatTrack(kind, id, index, name, stream) {
   const language = normalizeLanguage(readFirst(stream, ["Language", "Idioma"]));
   const title = readFirst(stream, ["Title", "Titulo", "Título", "Name", "Nome"]);
   const description = readFirst(stream, ["Description", "Descricao", "Descrição"]);
-  const codec = readFirst(stream, ["Codec"]);
+  const codec = readFirst(stream, ["Codec", "Codificador"]);
   const channels = readFirst(stream, ["Channels", "Canais"]);
-  const bitrate = readFirst(stream, ["Bitrate", "Taxa de bits"]);
+  const bitrate = readFirst(stream, ["Bitrate", "Taxa de bits", "Taxa de amostragem"]);
 
   return {
     id,
     kind,
+    selected: isTrackSelected(stream),
     title: uniqueValues([title, description, language]).join(" - ") || fallbackTrackTitle(kind, index),
     detail: uniqueValues([codec, channels, bitrate, cleanTrackSource(name)]).join(" - ")
   };
+}
+
+function isTrackSelected(stream) {
+  const selected = normalizeText(readFirst(stream, [
+    "Selected",
+    "Selecionado",
+    "Active",
+    "Ativo",
+    "Enabled",
+    "Habilitado"
+  ]));
+
+  return [
+    "1",
+    "true",
+    "yes",
+    "sim",
+    "selected",
+    "selecionado",
+    "active",
+    "ativo",
+    "enabled",
+    "habilitado"
+  ].includes(selected);
 }
 
 function readFirst(object, keys) {
@@ -306,6 +342,8 @@ function normalizeText(value) {
   return String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, " ")
+    .trim()
     .toLowerCase();
 }
 

@@ -25,13 +25,15 @@ test("extracts localized VLC audio and subtitle tracks with stream ids", () => {
           Tipo: "Áudio",
           Idioma: "English",
           Descrição: "Original",
-          Codec: "DTS"
+          Codec: "DTS",
+          Selecionado: "sim"
         },
         "Fluxo 3": {
           Tipo: "Legenda",
           Idioma: "Português",
           Descrição: "Forçada",
-          Codec: "SubRip"
+          Codec: "SubRip",
+          Ativo: "true"
         },
         "Fluxo 4": {
           Tipo: "Subtítulo",
@@ -58,6 +60,33 @@ test("extracts localized VLC audio and subtitle tracks with stream ids", () => {
       [4, "SDH - English", "SubRip - Fluxo 4"]
     ]
   );
+  assert.equal(status.tracks.activeAudioId, 2);
+  assert.equal(status.tracks.activeSubtitleId, 3);
+});
+
+test("reads Portuguese VLC detail fields", () => {
+  const status = normalizeStatus({
+    state: "paused",
+    information: {
+      category: {
+        "Transmissão 1": {
+          Tipo: "Áudio",
+          Idioma: "Português",
+          Codificador: "A/52 B Audio",
+          Canais: "3F2M/LFE",
+          Taxa_de_amostragem: "48000 Hz"
+        }
+      }
+    }
+  });
+
+  assert.deepEqual(status.tracks.audio[0], {
+    id: 1,
+    kind: "audio",
+    selected: false,
+    title: "Português",
+    detail: "A/52 B Audio - 3F2M/LFE - 48000 Hz - Transmissão 1"
+  });
 });
 
 test("does not create fake tracks when VLC omits stream data", () => {
@@ -74,6 +103,8 @@ test("does not create fake tracks when VLC omits stream data", () => {
 
   assert.deepEqual(status.tracks.audio, []);
   assert.deepEqual(status.tracks.subtitles, []);
+  assert.equal(status.tracks.activeAudioId, null);
+  assert.equal(status.tracks.activeSubtitleId, null);
 });
 
 test("maps 10 second seek controls to VLC seek commands", async (t) => {
