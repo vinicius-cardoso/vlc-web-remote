@@ -12,6 +12,7 @@ Interface web responsiva para controlar o VLC pela rede local. O app roda em Nod
 - Selecionar faixas de audio e legendas.
 - Acessar pelo celular usando o endereco da rede local.
 - Abrir videos pelo menu grafico com o VLC ja iniciado com HTTP ativo.
+- Controle fisico com knob: ESP32-C3 + tela de 2.4" em estilo retro SNES (veja abaixo).
 
 ## Requisitos
 
@@ -85,6 +86,30 @@ Para instalar a entrada `Abrir com VLC` usando o script do projeto:
 
 Depois disso, videos abertos pelo gerenciador de arquivos iniciam o VLC com a interface HTTP ativa.
 
+## Controle Fisico (ESP32-C3 + Knob)
+
+Um controle de mesa com tela retro estilo SNES: ESP32-C3 Super Mini, tela ST7789 de 2.4" (320x240) e encoder EC11. Ele conversa com este servidor por Wi-Fi (`/api/status` e `/api/control`), entao a senha do VLC nunca vai para o dispositivo.
+
+| Tela inicial | Volume acima de 100% |
+| --- | --- |
+| ![Tela inicial do knob](docs/assets/knob/home.png) | ![Volume em boost](docs/assets/knob/volume-boost.png) |
+| **Modo seek** | **Menu** |
+| ![Modo seek](docs/assets/knob/seek.png) | ![Menu](docs/assets/knob/menu.png) |
+| **Faixas de audio** | **Legendas** |
+| ![Faixas de audio](docs/assets/knob/audio.png) | ![Legendas](docs/assets/knob/subtitles.png) |
+| **VLC fechado** | **Servidor fora do ar** |
+| ![VLC fechado](docs/assets/knob/vlc-closed.png) | ![Servidor fora do ar](docs/assets/knob/no-server.png) |
+
+| Controle | Tela inicial | Modo seek | Menu |
+| --- | --- | --- | --- |
+| Girar o knob | Volume | Pula 10/30/60 s | Navega |
+| Clicar o knob | Entra no modo seek | Volta ao volume | Seleciona |
+| Segurar o knob | Abre o menu | Abre o menu | Fecha |
+| Botao K0 | Play/pause | Play/pause | Volta |
+| Segurar K0 | Mudo | Mudo | Fecha |
+
+Ligacoes em [docs/wiring/esp32c3-tft-ec11.png](docs/wiring/esp32c3-tft-ec11.png), firmware e instrucoes em [firmware/](firmware/README.md). As imagens acima sao capturas reais da tela, feitas com `firmware/tools/screenshot.py` em modo demo.
+
 ## Estrutura
 
 ```text
@@ -93,6 +118,8 @@ public/              HTML, CSS e JavaScript da interface
 scripts/             Automacoes para iniciar e integrar o VLC
 docs/                Guias e imagens do projeto
 docs/vlc-setup.md    Passo a passo detalhado de configuracao do VLC
+docs/wiring/         Ligacoes do controle fisico (ESP32-C3 + tela + knob)
+firmware/            Firmware PlatformIO do controle fisico
 ```
 
 ## Seguranca
