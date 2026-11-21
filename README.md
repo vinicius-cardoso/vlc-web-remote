@@ -1,8 +1,10 @@
 # VLC Web Remote
 
-Interface web responsiva para controlar o VLC pela rede local. O app roda em Node.js, serve uma tela mobile-first e faz proxy local para a interface HTTP do VLC.
+Interface web responsiva para controlar o VLC pela rede local. O app roda em Node.js, serve uma tela mobile-first e faz proxy local para a interface HTTP do VLC. O visual segue o mesmo tema retro SNES do controle fisico.
 
-![Tela de controle do VLC](docs/assets/control-screen.png)
+| Player | Volume | Faixas | VLC fechado |
+| --- | --- | --- | --- |
+| <img src="docs/assets/web/player.png" width="200" alt="Player tocando"> | <img src="docs/assets/web/volume.png" width="200" alt="Volume em boost"> | <img src="docs/assets/web/tracks.png" width="200" alt="Faixas de audio e legenda"> | <img src="docs/assets/web/offline.png" width="200" alt="VLC fechado"> |
 
 ## Recursos
 
@@ -115,6 +117,7 @@ Ligacoes em [docs/wiring/esp32c3-tft-ec11.png](docs/wiring/esp32c3-tft-ec11.png)
 ```text
 src/                 Servidor Node.js e cliente da API do VLC
 public/              HTML, CSS e JavaScript da interface
+public/fonts/        Fontes pixel Press Start 2P e Departure Mono (licenca OFL)
 scripts/             Automacoes para iniciar e integrar o VLC
 docs/                Guias e imagens do projeto
 docs/vlc-setup.md    Passo a passo detalhado de configuracao do VLC
