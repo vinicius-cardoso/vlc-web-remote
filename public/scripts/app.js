@@ -7,35 +7,91 @@ const state = {
   lastStatus: null
 };
 
+const BLOCKS = 20;
+
 const elements = {
   connectionDot: document.querySelector("[data-connection-dot]"),
   connectionText: document.querySelector("[data-connection-text]"),
-  playButton: document.querySelector(".play-button"),
+  connectionChip: document.querySelector("[data-connection-chip]"),
+  stateIcon: document.querySelector("[data-state-icon]"),
+  stateLabel: document.querySelector("[data-state-label]"),
+  playButton: document.querySelector(".play-key"),
   playIcon: document.querySelector("[data-play-icon]"),
   title: document.querySelector("[data-title]"),
   subtitle: document.querySelector("[data-subtitle]"),
+  volumeCard: document.querySelector("[data-volume-card]"),
   volumeLabel: document.querySelector("[data-volume-label]"),
+  volumeNote: document.querySelector("[data-volume-note]"),
+  volumeBlocks: document.querySelector("[data-volume-blocks]"),
   volumeSlider: document.querySelector("[data-volume-slider]"),
-  progressFill: document.querySelector("[data-progress-fill]"),
+  progressBlocks: document.querySelector("[data-progress-blocks]"),
   timeCurrent: document.querySelector("[data-time-current]"),
   timeTotal: document.querySelector("[data-time-total]"),
+  timeLeft: document.querySelector("[data-time-left]"),
   audioTracks: document.querySelector("[data-audio-tracks]"),
   subtitleTracks: document.querySelector("[data-subtitle-tracks]"),
   refresh: document.querySelector("[data-refresh]")
 };
 
+// Pixel icons, drawn like the knob's: '#' = one pixel, rendered as crisp rects.
 const icons = {
-  refresh: '<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M3 21v-5h5"></path><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M16 8h5V3"></path></svg>',
-  "play-pause": '<svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z"></path><path d="M4 5v14"></path></svg>',
-  pause: '<svg viewBox="0 0 24 24"><path d="M8 5v14"></path><path d="M16 5v14"></path></svg>',
-  play: '<svg viewBox="0 0 24 24"><path d="m6 3 14 9-14 9V3Z"></path></svg>',
-  "seek-back": '<svg viewBox="0 0 24 24"><path d="m11 17-5-5 5-5"></path><path d="M18 18a6 6 0 1 0 0-12"></path><path d="M6 12h12"></path></svg>',
-  "seek-forward": '<svg viewBox="0 0 24 24"><path d="m13 7 5 5-5 5"></path><path d="M6 6a6 6 0 1 0 0 12"></path><path d="M6 12h12"></path></svg>',
-  "volume-down": '<svg viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5Z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>',
-  "volume-up": '<svg viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5Z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>'
+  play: [
+    "##......",
+    "####....",
+    "######..",
+    "########",
+    "######..",
+    "####....",
+    "##......"
+  ],
+  "play-big": [
+    "#.....",
+    "##....",
+    "###...",
+    "####..",
+    "#####.",
+    "######",
+    "#####.",
+    "####..",
+    "###...",
+    "##....",
+    "#....."
+  ],
+  pause: Array(7).fill("###..###"),
+  stop: Array(7).fill("#######"),
+  "seek-back": [
+    "...#....#",
+    "..##...##",
+    ".###..###",
+    "####.####",
+    ".###..###",
+    "..##...##",
+    "...#....#"
+  ],
+  "seek-forward": [
+    "#....#...",
+    "##...##..",
+    "###..###.",
+    "####.####",
+    "###..###.",
+    "##...##..",
+    "#....#..."
+  ],
+  refresh: [
+    "..###.#.",
+    ".#...##.",
+    "#...###.",
+    "#.......",
+    "#.......",
+    "#......#",
+    ".#....#.",
+    "..####.."
+  ]
 };
 
 renderIcons();
+buildBlocks(elements.progressBlocks);
+buildBlocks(elements.volumeBlocks);
 bindEvents();
 renderDefaultTracks();
 refreshStatus();
@@ -53,8 +109,20 @@ function bindEvents() {
 
   elements.refresh.addEventListener("click", refreshStatus);
 
+  elements.volumeBlocks.addEventListener("click", (event) => {
+    const block = event.target.closest("i");
+    if (!block || elements.volumeSlider.disabled) {
+      return;
+    }
+
+    const value = ([...elements.volumeBlocks.children].indexOf(block) + 1) * (200 / BLOCKS);
+    elements.volumeSlider.value = String(value);
+    renderVolume(value);
+    runAction("volumeSet", value);
+  });
+
   elements.volumeSlider.addEventListener("input", () => {
-    elements.volumeLabel.textContent = `${elements.volumeSlider.value}%`;
+    renderVolume(Number(elements.volumeSlider.value));
     window.clearTimeout(state.volumeTimer);
     state.volumeTimer = window.setTimeout(() => {
       runAction("volumeSet", elements.volumeSlider.value);
@@ -119,15 +187,17 @@ function setStatus(status) {
   elements.title.textContent = status.title || "VLC";
   elements.subtitle.textContent = status.artist || status.filename || stateLabel(status.state);
   elements.playButton.setAttribute("aria-label", playing ? "Pausar" : "Reproduzir");
-  setIcon(elements.playIcon, playing ? "pause" : "play");
+  setIcon(elements.playIcon, playing ? "pause" : "play-big");
+  setPlayerState(status.state);
 
-  elements.volumeLabel.textContent = `${status.volumePercent}%`;
   elements.volumeSlider.value = String(status.volumePercent);
+  renderVolume(status.volumePercent);
 
-  const progress = status.length > 0 ? Math.round((status.time / status.length) * 100) : 0;
-  elements.progressFill.style.width = `${Math.min(Math.max(progress, 0), 100)}%`;
+  const filled = status.length > 0 ? Math.floor((status.time / status.length) * BLOCKS) : 0;
+  fillBlocks(elements.progressBlocks, filled);
   elements.timeCurrent.textContent = formatTime(status.time);
   elements.timeTotal.textContent = formatTime(status.length);
+  elements.timeLeft.textContent = status.length > 0 ? `-${formatTime(status.length - status.time)}` : "";
 
   renderTracks(elements.audioTracks, "audioTrack", status.tracks.audio, "Nenhum áudio informado pelo VLC.", state.selectedAudioTrackId);
   renderTracks(elements.subtitleTracks, "subtitleTrack", withSubtitleOff(status.tracks.subtitles), "Nenhuma legenda informada pelo VLC.", state.selectedSubtitleTrackId);
@@ -180,6 +250,47 @@ function setConnection(connected, message = "") {
   elements.connectionDot.classList.toggle("connected", connected);
   elements.connectionDot.classList.toggle("error", !connected);
   elements.connectionText.textContent = connected ? "Conectado ao VLC" : message || "Sem conexao com o VLC";
+  elements.connectionChip.textContent = connected ? "On" : "Off";
+  elements.connectionChip.classList.toggle("on", connected);
+  elements.connectionChip.classList.toggle("off", !connected);
+
+  if (!connected) {
+    setPlayerState("offline");
+  }
+}
+
+function setPlayerState(value) {
+  const labels = {
+    playing: "Tocando",
+    paused: "Pausado",
+    stopped: "Parado",
+    offline: "Sem VLC"
+  };
+  elements.stateLabel.textContent = labels[value] || "Parado";
+  setIcon(elements.stateIcon, value === "playing" ? "play" : value === "paused" ? "pause" : "stop");
+  elements.stateIcon.classList.toggle("playing", value === "playing");
+  elements.stateIcon.classList.toggle("paused", value === "paused");
+}
+
+// Volume card: big percent and blocks in the level color (green to 100%,
+// yellow boost, red above 150%), like the knob.
+function renderVolume(percent) {
+  const value = Math.round(Number(percent) || 0);
+  const level = value === 0 ? "mute" : value > 150 ? "loud" : value > 100 ? "boost" : "ok";
+  elements.volumeCard.dataset.level = level;
+  elements.volumeLabel.textContent = `${value}%`;
+  elements.volumeNote.textContent = level === "mute" ? "Mudo" : level === "ok" ? "" : "Boost";
+  fillBlocks(elements.volumeBlocks, Math.round(value / (200 / BLOCKS)));
+}
+
+function buildBlocks(container) {
+  container.replaceChildren(...Array.from({ length: BLOCKS }, () => document.createElement("i")));
+}
+
+function fillBlocks(container, count) {
+  [...container.children].forEach((block, index) => {
+    block.classList.toggle("on", index < count);
+  });
 }
 
 function setBusy(isBusy) {
@@ -275,5 +386,17 @@ function renderIcons() {
 }
 
 function setIcon(target, name) {
-  target.innerHTML = icons[name] || "";
+  const rows = icons[name];
+  if (!rows) {
+    target.innerHTML = "";
+    return;
+  }
+
+  const rects = [];
+  rows.forEach((row, y) => {
+    for (const match of row.matchAll(/#+/g)) {
+      rects.push(`<rect x="${match.index}" y="${y}" width="${match[0].length}" height="1"></rect>`);
+    }
+  });
+  target.innerHTML = `<svg viewBox="0 0 ${rows[0].length} ${rows.length}">${rects.join("")}</svg>`;
 }

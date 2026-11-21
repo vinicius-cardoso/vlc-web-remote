@@ -3,81 +3,89 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#101820">
+    <meta name="theme-color" content="#111117">
     <title>VLC Control</title>
+    <link rel="preload" href="/fonts/PressStart2P-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="/fonts/DepartureMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/styles/app.css">
     <script src="/scripts/app.js" defer></script>
   </head>
   <body>
-    <main class="app-shell">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">Controle local</p>
-          <h1>VLC Control</h1>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <h1 class="visually-hidden">VLC Control</h1>
+        <div class="state">
+          <span class="pixel-icon state-icon" data-state-icon data-icon="stop" aria-hidden="true"></span>
+          <span data-state-label>Conectando</span>
         </div>
-        <button class="icon-button" type="button" data-refresh aria-label="Atualizar">
-          <span class="icon" data-icon="refresh"></span>
+        <span class="abxy" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span class="chip" data-connection-chip>...</span>
+        <button class="key key-small" type="button" data-refresh aria-label="Atualizar">
+          <span class="pixel-icon" data-icon="refresh" aria-hidden="true"></span>
         </button>
-      </header>
+      </div>
+    </header>
 
-      <section class="status-panel" aria-live="polite">
-        <div class="connection-row">
-          <span class="status-dot" data-connection-dot></span>
-          <span data-connection-text>Conectando...</span>
-        </div>
+    <main class="app-shell">
+      <p class="connection-row" aria-live="polite">
+        <span class="lamp" data-connection-dot></span>
+        <span data-connection-text>Conectando...</span>
+      </p>
+
+      <section class="card now-playing" aria-live="polite">
         <h2 data-title>VLC</h2>
-        <p data-subtitle>Aguardando status do player.</p>
-        <div class="progress">
-          <span data-time-current>00:00</span>
-          <div class="progress-track" aria-hidden="true">
-            <span class="progress-fill" data-progress-fill></span>
-          </div>
-          <span data-time-total>00:00</span>
+        <p class="subtitle" data-subtitle>Aguardando status do player.</p>
+        <div class="blocks progress-blocks" data-progress-blocks aria-hidden="true"></div>
+        <div class="times">
+          <span><span data-time-current>00:00</span> <span class="dim">/</span> <span class="dim" data-time-total>00:00</span></span>
+          <span class="dim" data-time-left></span>
         </div>
       </section>
 
       <section class="primary-controls" aria-label="Controles de reproducao">
-        <button class="control-button seek-button" type="button" data-action="seekBackward" aria-label="Voltar 10 segundos">
-          <span class="icon" data-icon="seek-back"></span>
+        <button class="key seek-key" type="button" data-action="seekBackward" aria-label="Voltar 10 segundos">
+          <span class="pixel-icon" data-icon="seek-back" aria-hidden="true"></span>
           <span>-10s</span>
         </button>
-        <button class="control-button play-button" type="button" data-action="toggle" aria-label="Pausar / reproduzir">
-          <span class="icon play-icon" data-play-icon data-icon="play" aria-hidden="true"></span>
+        <button class="key key-accent play-key" type="button" data-action="toggle" aria-label="Pausar / reproduzir">
+          <span class="pixel-icon play-icon" data-play-icon data-icon="play-big" aria-hidden="true"></span>
         </button>
-        <button class="control-button seek-button" type="button" data-action="seekForward" aria-label="Avançar 10 segundos">
+        <button class="key seek-key" type="button" data-action="seekForward" aria-label="Avançar 10 segundos">
+          <span class="pixel-icon" data-icon="seek-forward" aria-hidden="true"></span>
           <span>+10s</span>
-          <span class="icon" data-icon="seek-forward"></span>
         </button>
       </section>
 
-      <section class="control-group" aria-labelledby="volume-title">
+      <section class="card" aria-labelledby="volume-title" data-volume-card>
         <div class="group-heading">
-          <h2 id="volume-title">Volume</h2>
-          <strong data-volume-label>0%</strong>
+          <div>
+            <h2 id="volume-title">Volume</h2>
+            <span class="volume-note" data-volume-note></span>
+          </div>
+          <strong class="volume-value" data-volume-label>0%</strong>
         </div>
 
+        <div class="blocks volume-blocks" data-volume-blocks aria-hidden="true" title="Toque para ajustar"></div>
+
         <div class="volume-grid">
-          <button class="control-button secondary volume-symbol-button" type="button" data-action="volumeDown" aria-label="Diminuir volume">
-            <span class="volume-symbol" aria-hidden="true">−</span>
-          </button>
-          <button class="control-button secondary volume-symbol-button" type="button" data-action="volumeUp" aria-label="Aumentar volume">
-            <span class="volume-symbol" aria-hidden="true">+</span>
-          </button>
+          <button class="key volume-key" type="button" data-action="volumeDown" aria-label="Diminuir volume">-</button>
+          <button class="key volume-key" type="button" data-action="volumeUp" aria-label="Aumentar volume">+</button>
         </div>
 
         <label class="slider-label" for="volume-slider">Ajuste fino</label>
         <input id="volume-slider" class="volume-slider" type="range" min="0" max="200" step="1" value="0" data-volume-slider>
-        <button class="text-button" type="button" data-action="mute">Silenciar</button>
+        <button class="key key-wide" type="button" data-action="mute">Silenciar</button>
       </section>
 
-      <section class="control-group" aria-labelledby="audio-title">
+      <section class="card" aria-labelledby="audio-title">
         <div class="group-heading">
           <h2 id="audio-title">Áudio</h2>
         </div>
         <div class="track-grid" data-audio-tracks></div>
       </section>
 
-      <section class="control-group" aria-labelledby="subtitle-title">
+      <section class="card" aria-labelledby="subtitle-title">
         <div class="group-heading">
           <h2 id="subtitle-title">Legenda</h2>
         </div>
