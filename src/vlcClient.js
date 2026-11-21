@@ -94,6 +94,21 @@ export async function sendControl(action, value) {
     );
   }
 
+  if (action === "seekBy") {
+    const requested = Number(value);
+    if (!Number.isFinite(requested)) {
+      const error = new Error("Valor de seek invalido.");
+      error.code = "BAD_REQUEST";
+      throw error;
+    }
+    const seconds = Math.round(clamp(requested, -86400, 86400));
+    if (seconds === 0) {
+      return getVlcStatus();
+    }
+    const val = seconds > 0 ? `+${seconds}` : String(seconds);
+    return applyRememberedSelection(normalizeStatus(await requestStatus("seek", { val })));
+  }
+
   if (action === "audioTrack") {
     const trackId = parseTrackValue(value);
     const status = normalizeStatus(await requestStatus("audio_track", { val: trackId }));

@@ -196,3 +196,35 @@ test("maps 10 second seek controls to VLC seek commands", async (t) => {
     ]
   );
 });
+
+test("maps seekBy to a relative VLC seek and rejects invalid values", async (t) => {
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+
+  globalThis.fetch = async (url) => {
+    requests.push(new URL(String(url)));
+    return {
+      ok: true,
+      status: 200,
+      async json() {
+        return { state: "playing", volume: 128, information: { category: {} } };
+      }
+    };
+  };
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  await sendControl("seekBy", 30);
+  await sendControl("seekBy", "-90");
+  await assert.rejects(sendControl("seekBy", "abc"), { code: "BAD_REQUEST" });
+
+  assert.deepEqual(
+    requests.map((url) => [url.searchParams.get("command"), url.searchParams.get("val")]),
+    [
+      ["seek", "+30"],
+      ["seek", "-90"]
+    ]
+  );
+});
