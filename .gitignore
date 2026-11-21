@@ -3,3 +3,7 @@ node_modules/
 .DS_Store
 *.log
 .playwright-mcp/
+
+# Firmware (PlatformIO)
+firmware/.pio/
+firmware/src/config.h

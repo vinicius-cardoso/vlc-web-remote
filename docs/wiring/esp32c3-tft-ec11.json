@@ -1,0 +1,27 @@
+{
+  "theme": "dark",
+  "parts": {
+    "U1": { "name": "ESP32-C3 Super Mini", "pins": {
+      "J1-1": "5V", "J1-2": "GND", "J1-3": "3V3", "J1-4": "GPIO4", "J1-5": "GPIO3",
+      "J1-6": "GPIO2", "J1-7": "GPIO1", "J1-8": "GPIO0",
+      "J2-1": "GPIO5", "J2-2": "GPIO6", "J2-3": "GPIO7", "J2-4": "GPIO8",
+      "J2-5": "GPIO9", "J2-6": "GPIO10", "J2-7": "GPIO20", "J2-8": "GPIO21" } },
+    "U2": { "name": "2.4in TFT ST7789 + EC11", "pins": {
+      "1": "GND", "2": "VCC", "3": "SCL", "4": "SDA", "5": "RES", "6": "DC",
+      "7": "CS", "8": "BLK", "9": "A", "10": "B", "11": "PUSH", "12": "KO" } }
+  },
+  "nets": [
+    { "name": "GND",      "color": "black",  "pins": ["U1.J1-2", "U2.1"] },
+    { "name": "3V3",      "color": "red",    "pins": ["U1.J1-3", "U2.2"] },
+    { "name": "SPI_SCK",  "color": "orange", "pins": ["U1.J1-4", "U2.3"] },
+    { "name": "SPI_MOSI", "color": "green",  "pins": ["U1.J2-2", "U2.4"] },
+    { "name": "LCD_RST",  "color": "grey",   "pins": ["U1.J2-7", "U2.5"] },
+    { "name": "LCD_DC",   "color": "violet", "pins": ["U1.J2-1", "U2.6"] },
+    { "name": "LCD_CS",   "color": "brown",  "pins": ["U1.J2-3", "U2.7"] },
+    { "name": "LCD_BL",   "color": "white",  "pins": ["U1.J2-8", "U2.8"] },
+    { "name": "ENC_A",    "color": "blue",   "pins": ["U1.J1-8", "U2.9"] },
+    { "name": "ENC_B",    "color": "yellow", "pins": ["U1.J1-7", "U2.10"] },
+    { "name": "ENC_SW",   "color": "pink",   "pins": ["U1.J1-5", "U2.11"] },
+    { "name": "BTN",      "color": "pink",   "pins": ["U1.J2-6", "U2.12"] }
+  ]
+}
