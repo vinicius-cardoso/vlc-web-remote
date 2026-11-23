@@ -1,8 +1,10 @@
 // Serial console for screenshots and bench testing. One command per line:
 //
-//   demo play|novlc|noserver|nowifi   show a fixed demo status, stop network
-//   live                              back to the real server
+//   demo play|novlc|noserver|nowifi   VLC mode with a fixed demo status
+//   demo bt|btpair                    BT mode, connected or pairing (no radio)
+//   live                              leave demo mode and open the mode picker
 //   home                              reset the UI to the home screen
+//   pick                              open the VLC / BT mode picker
 //   turn N                            turn the knob N detents (negative = back)
 //   click | hold                      knob click / knob hold
 //   key | keyhold                     K0 click / K0 hold
@@ -44,8 +46,13 @@ class Console {
   void run(const char* cmd) {
     using B = Input::Btn;
     if (!strncmp(cmd, "demo ", 5)) demo(cmd + 5);
-    else if (!strcmp(cmd, "live")) net::live();
+    else if (!strcmp(cmd, "live")) {
+      net::live();
+      bt::live();
+      ui_.pick();
+    }
     else if (!strcmp(cmd, "home")) ui_.reset();
+    else if (!strcmp(cmd, "pick")) ui_.pick();
     else if (!strncmp(cmd, "turn ", 5)) in_.inject(atoi(cmd + 5));
     else if (!strcmp(cmd, "click")) in_.inject(B::KnobClick);
     else if (!strcmp(cmd, "hold")) in_.inject(B::KnobLong);
@@ -72,6 +79,11 @@ class Console {
   }
 
   void demo(const char* which) {
+    if (!strncmp(which, "bt", 2)) {
+      net::demo(Status(), Link::Ok, "");  // freezes the network task
+      bt::demo(strcmp(which, "btpair") != 0);
+      return ui_.start(Mode::Bt, false);
+    }
     Status s;
     s.state = 1;
     s.volume = 85;
@@ -99,5 +111,6 @@ class Console {
       net::demo(s, Link::NoWifi, "HOME-WIFI");
     else
       net::demo(s, Link::Ok, "");
+    ui_.start(Mode::Vlc, false);
   }
 };

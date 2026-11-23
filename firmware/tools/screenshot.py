@@ -20,6 +20,9 @@ import serial
 
 # name, console commands to run before the shot
 SCREENS = [
+    ("pick", ["demo play", "pick", "turn 1"]),
+    ("bt-pair", ["demo btpair"]),
+    ("bt-connected", ["demo bt", "turn 3"]),
     ("home", ["demo play"]),
     ("volume-boost", ["demo play", "turn 20"]),
     ("seek", ["demo play", "click", "turn 3"]),

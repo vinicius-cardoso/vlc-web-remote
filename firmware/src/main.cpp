@@ -10,6 +10,7 @@
 #endif
 
 #include "board.h"
+#include "bt.h"
 #include "console.h"
 #include "gfx.h"
 #include "input.h"
@@ -50,5 +51,6 @@ void setup() {
 void loop() {
   console.poll();
   ui.tick();
+  bt::tick();
   delay(2);
 }

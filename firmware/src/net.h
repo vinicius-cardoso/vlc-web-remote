@@ -1,5 +1,5 @@
-// Network task. Keeps Wi-Fi up, polls /api/status, and sends what the UI asks
-// for through /api/control. It runs as its own FreeRTOS task so a slow or dead
+// Network task (VLC mode). Keeps Wi-Fi up, polls /api/status, and sends what
+// the UI asks for through /api/control. It runs as its own FreeRTOS task so a slow or dead
 // server never freezes the screen or the knob; the UI reads a copy of the
 // latest status under a mutex.
 //
@@ -20,6 +20,9 @@ struct Track {
   bool selected = false;
   char title[40] = "";
 };
+
+// Stored in NVS. 1 was the removed PC mode; the UI reads it as VLC.
+enum class Mode : uint8_t { Vlc = 0, Bt = 2 };
 
 struct Status {
   uint8_t state = 0;  // 0 stopped, 1 playing, 2 paused
@@ -62,6 +65,11 @@ static uint8_t qHead = 0, qLen = 0;
 static int pendingVol = -1;  // latest volume target, -1 = none
 static int pendingSeek = 0;  // seconds still to seek
 
+// Wi-Fi stays off until the UI picks VLC mode; BT mode never uses it.
+static volatile Mode mode = Mode::Vlc;
+static volatile bool started = false;
+static volatile bool pollNow = false;
+
 // Demo mode (serial console): the task goes quiet and the UI shows a fixed
 // status, so screenshots never touch the real VLC or show real titles.
 static volatile bool frozen = false;
@@ -78,6 +86,29 @@ static void snapshot(Status& s, Link& l, char* d, size_t cap) {
 }
 
 static bool isDemo() { return frozen; }
+
+// Start (or switch to) a mode: drop what was queued for the old one and poll
+// the new one right away.
+static void setMode(Mode m) {
+  xSemaphoreTake(mtx, portMAX_DELAY);
+  bool changed = mode != m || !started;
+  mode = m;
+  if (!frozen) started = true;  // demo screenshots never start the radio
+  if (changed && !frozen) {
+    qLen = 0;
+    pendingVol = -1;
+    pendingSeek = 0;
+    status = Status();
+    if (link == Link::NoVlc) {  // that error belonged to the old mode
+      link = Link::Boot;
+      detail[0] = 0;
+    }
+    pollNow = true;
+  }
+  ver++;
+  xSemaphoreGive(mtx);
+  xTaskNotifyGive(taskHandle);
+}
 
 static void send(const char* action, int32_t value = 0, bool hasValue = false) {
   if (frozen) return;
@@ -152,8 +183,15 @@ static uint8_t readTracks(JsonArrayConst arr, Track* out) {
   return n;
 }
 
+static uint8_t playState(const char* state) {
+  return !strcmp(state, "playing") ? 1 : !strcmp(state, "paused") ? 2 : 0;
+}
+
+static bool store(const Status& next, Mode m);
+
 // One request to the server; on success the reply's status becomes the shared one.
 static bool request(const char* path, const char* body) {
+  const Mode m = mode;
   static WiFiClient client;
   static HTTPClient http;
   http.setReuse(true);  // the server keeps connections alive for 5 s
@@ -193,9 +231,8 @@ static bool request(const char* path, const char* body) {
   static Status next;  // static: keeps 1.2 KB off the task stack
   next = Status();
   JsonObjectConst s = doc["status"];
-  const char* state = s["state"] | "stopped";
-  next.state = !strcmp(state, "playing") ? 1 : !strcmp(state, "paused") ? 2 : 0;
   next.volume = s["volumePercent"] | 0;
+  next.state = playState(s["state"] | "stopped");
   next.time = s["time"] | 0;
   next.length = s["length"] | 0;
   const char* title = s["title"] | "";
@@ -206,9 +243,12 @@ static bool request(const char* path, const char* body) {
   next.nSubs = readTracks(tracks["subtitles"], next.subs);
   next.activeAudio = tracks["activeAudioId"] | -1;
   next.activeSub = tracks["activeSubtitleId"] | -1;
+  return store(next, m);
+}
 
+static bool store(const Status& next, Mode m) {
   xSemaphoreTake(mtx, portMAX_DELAY);
-  if (frozen) {  // demo started while this request was in flight
+  if (frozen || mode != m) {  // demo started, or the mode changed, mid-request
     xSemaphoreGive(mtx);
     return true;
   }
@@ -248,13 +288,17 @@ static void connectWiFi() {
 }
 
 static void task(void*) {
-  WiFi.mode(WIFI_STA);
-  WiFi.setSleep(false);  // modem sleep adds 100+ ms to every knob request
   uint32_t lastPoll = 0, lastVol = 0, lastSeek = 0;
+  bool radioOn = false;
   for (;;) {
-    if (frozen) {
+    if (frozen || !started || mode == Mode::Bt) {
       vTaskDelay(pdMS_TO_TICKS(50));
       continue;
+    }
+    if (!radioOn) {
+      WiFi.mode(WIFI_STA);
+      WiFi.setSleep(false);  // modem sleep adds 100+ ms to every knob request
+      radioOn = true;
     }
     if (WiFi.status() != WL_CONNECTED) {
       connectWiFi();
@@ -303,7 +347,8 @@ static void task(void*) {
 
     // 3) status poll
     uint32_t every = link == Link::Ok ? POLL_MS : POLL_OFFLINE_MS;
-    if (now - lastPoll >= every) {
+    if (pollNow || now - lastPoll >= every) {
+      pollNow = false;
       request("/api/status", nullptr);
       lastPoll = millis();
       continue;
