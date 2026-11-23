@@ -10,6 +10,8 @@ This is a small Node.js ES module app that serves a mobile-first VLC remote and 
 - `public/index.html`, `public/styles/app.css`, and `public/scripts/app.js` are the browser UI.
 - `scripts/` contains Linux helper scripts for launching VLC with HTTP enabled and installing the desktop entry.
 - `docs/vlc-setup.md` documents VLC setup and troubleshooting.
+- `firmware/` is the PlatformIO firmware for the ESP32-C3 knob: VLC mode talks to `/api/status` and `/api/control` over Wi-Fi; BT mode is a Bluetooth media remote that needs no server. See `firmware/README.md`.
+- `firmware/src/config.h` holds Wi-Fi credentials and is gitignored; only `config.example.h` is committed.
 
 ## Build, Test, and Development Commands
 
@@ -21,7 +23,7 @@ This is a small Node.js ES module app that serves a mobile-first VLC remote and 
 - `./scripts/start-vlc.sh`: start VLC with the HTTP interface enabled.
 - `./scripts/install-open-with-vlc.sh`: install the desktop launcher integration.
 
-There is no build step; the server and static assets run directly on Node 18+.
+There is no build step; the server and static assets run directly on Node 18+. The firmware builds with `pio run` inside `firmware/` (`pio run -t upload` flashes it).
 
 ## Coding Style & Naming Conventions
 

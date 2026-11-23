@@ -14,13 +14,14 @@ Interface web responsiva para controlar o VLC pela rede local. O app roda em Nod
 - Selecionar faixas de audio e legendas.
 - Acessar pelo celular usando o endereco da rede local.
 - Abrir videos pelo menu grafico com o VLC ja iniciado com HTTP ativo.
-- Controle fisico com knob: ESP32-C3 + tela de 2.4" em estilo retro SNES (veja abaixo).
+- Controle fisico com knob: ESP32-C3 + tela de 2.4" em estilo retro SNES (veja abaixo), que controla o VLC ou, por Bluetooth, qualquer computador ou celular sem servidor (volume, mudo, brilho, play/pause, proxima/anterior).
 
 ## Requisitos
 
 - Node.js 18 ou superior.
 - VLC instalado no computador que vai tocar o video.
 - iPhone/celular e computador na mesma rede Wi-Fi.
+- Controle fisico (opcional): ESP32-C3 Super Mini, modulo de tela ST7789 2.4" com encoder EC11 e [PlatformIO](https://platformio.org/). Detalhes em [firmware/README.md](firmware/README.md).
 
 ## Como Rodar
 
@@ -90,7 +91,30 @@ Depois disso, videos abertos pelo gerenciador de arquivos iniciam o VLC com a in
 
 ## Controle Fisico (ESP32-C3 + Knob)
 
-Um controle de mesa com tela retro estilo SNES: ESP32-C3 Super Mini, tela ST7789 de 2.4" (320x240) e encoder EC11. Ele conversa com este servidor por Wi-Fi (`/api/status` e `/api/control`), entao a senha do VLC nunca vai para o dispositivo.
+Um controle de mesa com tela retro estilo SNES: ESP32-C3 Super Mini, tela ST7789 de 2.4" (320x240) e encoder EC11. Ao ligar, ele pergunta o que controlar (a ultima escolha ja vem marcada):
+
+- **VLC**: o VLC deste computador, por Wi-Fi, atraves deste servidor (`/api/status` e `/api/control`). A senha do VLC nunca vai para o dispositivo.
+- **BT**: qualquer computador ou celular, sem servidor e sem Wi-Fi. O knob vira um controle de midia Bluetooth (volume, mudo, brilho, play/pause, proxima e anterior). Pareie uma vez em Bluetooth > Adicionar dispositivo > `VLC Knob`; depois ele reconecta sozinho.
+
+| Escolha do modo | Modo VLC | Modo BT |
+| --- | --- | --- |
+| ![Escolha entre VLC e BT](docs/assets/knob/pick.png) | ![Modo VLC tocando](docs/assets/knob/home.png) | ![Modo BT conectado](docs/assets/knob/bt-connected.png) |
+
+Para montar: ligacoes em [docs/wiring/esp32c3-tft-ec11.png](docs/wiring/esp32c3-tft-ec11.png); compilar, gravar e configurar o Wi-Fi em [firmware/README.md](firmware/README.md).
+
+Para trocar de modo depois: no modo VLC, menu > MODE; no modo BT ou em qualquer tela de erro, segure o knob. Trocar entre VLC e BT reinicia o knob direto no modo novo.
+
+### Modo VLC
+
+| Controle | Tela inicial | Modo seek | Menu |
+| --- | --- | --- | --- |
+| Girar o knob | Volume | Pula 10/30/60 s | Navega |
+| Clicar o knob | Entra no modo seek | Volta ao volume | Seleciona |
+| Segurar o knob | Abre o menu | Abre o menu | Fecha |
+| Botao K0 | Play/pause | Play/pause | Volta |
+| Segurar K0 | Mudo | Mudo | Fecha |
+
+O menu tem AUDIO, SUBTITLES (legendas) e MODE. Precisa do `npm start` rodando e do VLC aberto com `./scripts/start-vlc.sh`; se faltar algum, a tela diz qual.
 
 | Tela inicial | Volume acima de 100% |
 | --- | --- |
@@ -102,15 +126,23 @@ Um controle de mesa com tela retro estilo SNES: ESP32-C3 Super Mini, tela ST7789
 | **VLC fechado** | **Servidor fora do ar** |
 | ![VLC fechado](docs/assets/knob/vlc-closed.png) | ![Servidor fora do ar](docs/assets/knob/no-server.png) |
 
-| Controle | Tela inicial | Modo seek | Menu |
-| --- | --- | --- | --- |
-| Girar o knob | Volume | Pula 10/30/60 s | Navega |
-| Clicar o knob | Entra no modo seek | Volta ao volume | Seleciona |
-| Segurar o knob | Abre o menu | Abre o menu | Fecha |
-| Botao K0 | Play/pause | Play/pause | Volta |
-| Segurar K0 | Mudo | Mudo | Fecha |
+### Modo BT
 
-Ligacoes em [docs/wiring/esp32c3-tft-ec11.png](docs/wiring/esp32c3-tft-ec11.png), firmware e instrucoes em [firmware/](firmware/README.md). As imagens acima sao capturas reais da tela, feitas com `firmware/tools/screenshot.py` em modo demo.
+| Controle | Acao |
+| --- | --- |
+| Girar o knob | Uma tecla por clique do knob: volume +/-, brilho +/- ou faixa (esquerda = anterior, direita = proxima) |
+| Clicar o knob | Troca o alvo: VOL, LIGHT, TRACK (volta para VOL depois de 5 s parado) |
+| Segurar o knob | Volta para a escolha do modo |
+| Botao K0 | Play/pause |
+| Segurar K0 | Mudo |
+
+As teclas so vao do knob para o computador, entao a tela mostra a ultima tecla enviada, nao o volume nem o titulo. O tamanho de cada passo de volume e o sistema que define (2% no Windows, cerca de 6% no macOS, 5% no KDE). As teclas de brilho funcionam no Linux e na maioria dos notebooks; monitores externos costumam ignorar.
+
+| Pareando | Conectado |
+| --- | --- |
+| ![Modo BT pareando](docs/assets/knob/bt-pair.png) | ![Modo BT conectado](docs/assets/knob/bt-connected.png) |
+
+As imagens acima sao capturas reais da tela, feitas com `firmware/tools/screenshot.py` em modo demo.
 
 ## Estrutura
 
@@ -122,7 +154,7 @@ scripts/             Automacoes para iniciar e integrar o VLC
 docs/                Guias e imagens do projeto
 docs/vlc-setup.md    Passo a passo detalhado de configuracao do VLC
 docs/wiring/         Ligacoes do controle fisico (ESP32-C3 + tela + knob)
-firmware/            Firmware PlatformIO do controle fisico
+firmware/            Firmware PlatformIO do controle fisico (modos VLC e BT)
 ```
 
 ## Seguranca
